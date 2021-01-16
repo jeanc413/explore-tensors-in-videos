@@ -5,19 +5,16 @@ Created on Sat Nov 21 14:19:40 2020
 @author: JC
 """
 # %% import packages
-from os import chdir
 import pickle
 import glob
-chdir("C:/Users/JC/Documents/MEGAsync/TrierDataScienceMaster/Research Project/Shared-Exploring Tensors as Videos/Scripts")
 import tensorly as tl
 from TuckerFunction import TuckerFunction, sub_tensor
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-# %% define Tensor subset class
 
-chdir("C:/Users/JC/Documents/MEGAsync/TrierDataScienceMaster/Research Project/Shared-Exploring Tensors as Videos/Decompositions")
+# %% define Tensor subset class
 name_list  = glob.glob('*')
 name_list = [n for n in name_list if "HandWash_" in n]
 Tensor_List = []
@@ -132,11 +129,4 @@ np.shape(Tensor_List[0].factors[2])
 np.shape(Tensor_List[0].factors[3])
 Tensor_List[0].factors[3]
 Tensor_List[0].core
-
-
-
-
-
-
-
 
