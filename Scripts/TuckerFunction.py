@@ -1,101 +1,178 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Nov 14 10:59:15 2020
+Updated on Mon Jan 18
 
 @author: JC
 """
-# %% import packages
+# %% module dependencies
 import cv2
 import numpy as np
 import tensorly as tl
 from tensorly.decomposition import tucker
-import time
+from tensorly.decomposition import parafac
+try:
+    tl.set_backend("pytorch")
+except ValueError:
+    tl.set_backend("numpy")
+backend_test = False
 
 
 # %% define Tensor subset class
 class SubTensor:
-    def __init__(self, video_array, rng, video_name):
+    def __init__(self, video_array, rng, video_name, rank, decomposer="tucker"):
+        self.decomposer = decomposer.lower()
         self.video_name = video_name
         self.rng = rng
-        subset = tl.tensor(video_array).astype('d')
-        self.core, self.factors = tucker(subset, rank=[2, 2, 2, 2])
+        if 'numpy' == tl.get_backend():
+            subset = tl.tensor(video_array).astype('d')
+        elif 'pytorch' == tl.get_backend():
+            subset = tl.tensor(video_array).double()
+        else:
+            tl.set_backend("numpy")
+            subset = tl.tensor(video_array).astype('d')
+        self.__class__ = SubTensor
+
+        try:
+            method = getattr(tl.decomposition, self.decomposer)
+            self.core, self.factors = method(subset, rank=rank)
+        except AttributeError:
+            print("Tensorly has no attribute "+str(self.decomposer))
+            self.core, self.factors = (None, None)
+            self.__class__ = None
 
 
 # %% define Tucker Decomposition Function
-def tucker_function(video_address, tensor_length=50, seed_state=None, max_frames=None):
+def video_tensor_decomposer(video_address,
+                            tensor_length=50,
+                            rank=(2, 2, 2, 2),
+                            decomposer="tucker",
+                            gray=False,
+                            seed_state=None,
+                            max_frames=None):
     """
-    INPUTS:
-    video_capture: an OpenCV VideoCapture object whose frames we want to read
-    max_frames: the maximum number of frames we want to read
-    
-    OUTPUT:
-    array of all the frames until max_frames
+    This is a wrapper function to generate tucker and cp decompositions of videos by transforming them as tensors.
+
+    Parameters
+    ----------
+        video_address: string
+            Path where video is located
+        tensor_length: int
+            Integer telling how many frames are to be selected to generate the tensor
+        rank: tuple or list
+            tuple or list with the n-rank to use during the decomposition
+        decomposer: {tucker, parafac} or tensorly.decomposition fun
+            Used decomposition algorithm from `tensorly` library
+        gray: bool
+            Bool telling if the video should be converted to grayscale
+        seed_state: numpy.random.RandomState
+            Seed state used to generate the frames sample. If None, a random initial seed is to be started.
+        max_frames: int
+            Integer telling if there's a maximum amount of frames to be used from video length. If None,
+            it's to be set as the maximum number of frames of the video.
+
+    Returns
+    -------
+    Returns system integrated points for the provided mesh.
     """
+    # Checking if decomposers are on parameter
+    if decomposer not in ("tucker", "parafac"):
+        print("Decomposition technic not in the common parameters.")
+        print("SubTensor class will try to use this decomposer.")
+
+    # Create video capture device
     video_capture = cv2.VideoCapture(video_address)
+
     # Check how long the video will be
     if max_frames is None:
         max_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    # Checks or sets random seed and store the sample index selection
+    if seed_state is None:
+        seed_state = np.random.RandomState(int(time.time()))
+    rng = np.sort(seed_state.choice(range(0, max_frames), tensor_length, replace=False))
+
     # Initialize empty array
     frames_array = []
-    
-    # Keep track of the frame number
-    frame_nb = 0
-    
-    # iterate through the frames and append them to the array
-    while video_capture.isOpened() and frame_nb < max_frames:
-        ret, frame = video_capture.read()
-        if not ret:
-            break
-        frames_array.append(frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        frame_nb += 1
-    
+
+    # Load frames, first checks if gray-scale required
+    if gray:
+        for i in rng:
+            video_capture.set(cv2.cv2.CAP_PROP_POS_FRAMES, i)
+            ret, frame = video_capture.read()
+            if not ret:
+                break
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frames_array.append(frame)
+    else:
+        for i in rng:
+            video_capture.set(cv2.cv2.CAP_PROP_POS_FRAMES, i)
+            ret, frame = video_capture.read()
+            if not ret:
+                break
+            frames_array.append(frame)
+
     # release the video capture
     video_capture.release()
     cv2.destroyAllWindows()
-    
-    # release video from memory 
+
+    # release capture video from memory
     del video_capture
 
-    # set fixed seed for reproducibility
-    if seed_state is None:
-        seed_state = np.random.RandomState(int(time.time()))
-    
-    # subset array by taking frame sample
-    rng = seed_state.choice(range(0, max_frames), tensor_length)
-    frames_array = np.asarray(frames_array)[rng, :, :, :]
-    
     # make tensor and decomposition (See class "sub_tensor" disambiguation up)
-    tensor_decomposition = SubTensor(video_array=frames_array, rng=rng, video_name=video_address)
+    tensor_decomposition = SubTensor(video_array=np.asarray(frames_array),
+                                     rng=rng,
+                                     video_name=video_address,
+                                     rank=rank,
+                                     decomposer="tucker")
 
-    # return the tensor object 
+    # return the tensor object
     return tensor_decomposition
 
 
 # %% Testing function and class
 if __name__ == '__main__':
     from os import chdir
+    import time
     seed = np.random.RandomState(123)
     chdir("C:/Users/JC/Documents/MEGAsync/TrierDataScienceMaster/Research Project/Scripts/Data")
-    
+
     t_i = time.time()
-    parking_lot_Object = tucker_function('parking_lot.MOV', seed_state=seed, max_frames=314)
-    patio_Object = tucker_function('patio.MOV', seed_state=seed, max_frames=314)
-    commute_Object = tucker_function('commute.MOV', seed_state=seed, max_frames=314)
+    video_tensor_decomposer('parking_lot.MOV', tensor_length=10, seed_state=seed, max_frames=314)
+    video_tensor_decomposer('patio.MOV', tensor_length=10, seed_state=seed, max_frames=314)
+    video_tensor_decomposer('commute.MOV', tensor_length=10, seed_state=seed, max_frames=314)
     duration = time.time()-t_i
-    print(duration)
+    print("Three tensors decomposition lasted", duration)
+
+    test_gray = video_tensor_decomposer('parking_lot.MOV',
+                                        tensor_length=10, gray=True, seed_state=seed, max_frames=314)
+    test_cp = video_tensor_decomposer('parking_lot.MOV',
+                                      tensor_length=10, decomposer="parafac", seed_state=seed, max_frames=314)
+
+    if test_gray != (None, None):
+        print("Gray-scale color reduction successful run")
+
+    if test_cp != (None, None):
+        print("CP decomposer successful run")
 
 # run of 3 videos lasted 186.35 with this approach
 # run of 3 videos lasted 268.011 with paper approach
 # random_frames=parking_lot_Object.rng
 
-
-
-
-
-
-
-
-
-
+# %% Backend performance checker
+if __name__ == '__main__' and backend_test:
+    from os import chdir
+    import time
+    seed = np.random.RandomState(123)
+    chdir("C:/Users/JC/Documents/MEGAsync/TrierDataScienceMaster/Research Project/Scripts/Data")
+    backends = ('numpy', 'pytorch')
+    sample_size = 3
+    average_time = {}
+    for backend in backends:
+        t_i = time.time()
+        for _ in range(sample_size):
+            video_tensor_decomposer('parking_lot.MOV',
+                                    tensor_length=10,
+                                    seed_state=seed)
+        average_time[backend] = (time.time()-t_i)/sample_size
+    print(average_time)
