@@ -4,13 +4,14 @@ import tensorly as tl
 if tl.get_backend() == 'pytorch':
     tl.set_backend('numpy')
 
+
 def tensor_distance(x1, x2):
     # Tensor distance norm
     return tl.norm(x1-x2)
 
 
 class KMeans:
-    def __init__(self, tensor_list, distance=tensor_distance, k=5, max_iterations=100):
+    def __init__(self, tensor_list, distance=tensor_distance, k=6, max_iterations=100):
         # Init tensors
         self.tensor_list = tensor_list
         self.n_samples = len(tensor_list)
@@ -20,6 +21,8 @@ class KMeans:
         self.k = k
         self.max_iterations = max_iterations
         self.distance = distance
+        self.exit_criteria = None
+        self.iterations = 0
 
         # list of sample indices inside each cluster
         self.clusters = [[] for _ in range(self.k)]
@@ -27,14 +30,15 @@ class KMeans:
         # mean feature tensor for each cluster
         self.centroids = []
 
-    def predict(self, centroids=None):
+    def predict(self, centroids=None, verbose=False):
         # initialize centroids
         if centroids is None:
             self.centroids = np.random.choice(self.n_samples, self.k, replace=False)
             self.centroids = [self.tensor_list[i].core for i in self.centroids]
 
         # Optimization
-        for _ in range(self.max_iterations):
+        current_error = 1.
+        for iteration in range(self.max_iterations):
             # update clusters
             self.clusters = self._create_clusters(self.centroids)
 
@@ -43,9 +47,17 @@ class KMeans:
             self.centroids = self._get_centroids(self.clusters)
 
             # check for convergence
-            if self._is_converged(centroids_old, self.centroids):
+            current_error = self._is_converged(centroids_old, self.centroids)
+            if current_error == 0:
+                self.exit_criteria = "convergence"
                 break
         # return cluster labels
+        if self.exit_criteria is None:
+            self.exit_criteria = "max_iter"
+            if verbose:
+                print("Warning: Algorithm stopped due to exceeding max iterations.")
+                print("Last error evaluation of " + str(np.round(current_error, 8)))
+        self.iterations = iteration
         return self._get_cluster_labels(self.clusters)
 
     def _get_cluster_labels(self, clusters):
@@ -91,4 +103,4 @@ class KMeans:
     def _is_converged(self, centroids_old, centroids):
         # Verify if there's no more improvement for the current iteration and returns True as converging criteria
         distances = [self.euclidian_distance(centroids_old[i], centroids[i]) for i in range(self.k)]
-        return sum(distances) == 0
+        return sum(distances)
