@@ -24,6 +24,7 @@ class SubTensor:
         self.decomposer = decomposer.lower()
         self.video_name = video_name
         self.rng = rng
+        self.rank = rank
         if 'numpy' == tl.get_backend():
             subset = tl.tensor(video_array).astype('d')
         elif 'pytorch' == tl.get_backend():
@@ -44,10 +45,10 @@ class SubTensor:
 
 # %% define Tucker Decomposition Function
 def video_tensor_decomposer(video_address,
-                            tensor_length=50,
+                            tensor_length=200,
                             rank=(2, 2, 2, 2),
                             decomposer="tucker",
-                            gray=False,
+                            gray=True,
                             seed_state=None,
                             max_frames=None):
     """
