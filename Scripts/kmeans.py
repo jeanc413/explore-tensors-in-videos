@@ -1,6 +1,8 @@
 import numpy as np
 import tensorly as tl
 
+if tl.get_backend() == 'pytorch':
+    tl.set_backend('numpy')
 
 def tensor_distance(x1, x2):
     # Tensor distance norm

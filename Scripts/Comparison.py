@@ -7,12 +7,14 @@ Created on Sat Nov 21 14:19:40 2020
 # %% import packages
 import pickle
 import glob
+import TuckerFunction
 import kmeans
 import tensorly as tl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from os import chdir
 from sklearn.metrics.cluster import normalized_mutual_info_score
 
 
@@ -56,7 +58,26 @@ def standardize(tensor_list):
         tensor_list[i].core = standard_score
     return tensor_list
 
+
+def unit_length_scaling(tensor_list):
+    core_list = [tensor_list[i].core for i in range(len(tensor_list))]
+    for i in range(len(tensor_list)):
+        tensor_list[i].core = core_list[i]/tl.norm(core_list[i])
+    return tensor_list
+
+
+def min_max_scaling(tensor_list):
+    core_list = [tensor_list[i].core for i in range(len(tensor_list))]
+    min_core = tl.min(core_list, axis=0)
+    max_core = tl.max(core_list, axis=0)
+    core_list = (core_list - min_core)/(max_core - min_core)
+    for i in range(len(tensor_list)):
+        tensor_list[i].core = core_list[i]
+    return tensor_list
+
+
 # %% WARNING Change current directory to decomposition folder
+chdir("Decompositions")
 # %% Load SubTensors objects
 name_list = glob.glob('*')
 name_list = [n for n in name_list if "HandWash_" in n]
@@ -66,6 +87,9 @@ for tensor in name_list:
     Tensor_List.append(pickle.load(Handler))
 
 n = len(Tensor_List)
+
+for i in range(n):
+    Tensor_List[i].core = np.asarray(Tensor_List[i].core)
 
 # %% Contingency table
 Clusters = kmeans.KMeans(Tensor_List, k=6).predict()
