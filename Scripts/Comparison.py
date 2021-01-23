@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.metrics.cluster import normalized_mutual_info_score
+from sklearn import metrics
 import kmeans
 
 
@@ -77,8 +77,8 @@ def min_max_scaling(tensor_list):
 
 
 # %% Set experiment evaluation
-iterations = 15
-digits = 4
+iterations = 31
+digits = 2
 decompositions_features = ["gray scale, rank=(32, 32, 32), frames=200",
                            "BGR, rank=(10, 10, 10, 2), frames=100"]
 decompositions_paths = ["Decompositions", "Decompositions2"]  # Folders where distinct decompositions are stored
@@ -104,55 +104,65 @@ for index, path in enumerate(decompositions_paths):
 
     for j in range(len(Tensor_List)):
         Tensor_List[j].core = np.asarray(Tensor_List[j].core)
-        
+
     section_break = "-------------------------------------"
     print(section_break)
     print("Results for", decompositions_features[index])
 
     # Confusion matrix for Type
-    score = 0
-    convergence = 0
+    score = []
+    convergence = []
     for _ in range(iterations):
-        algorithm = kmeans.KMeans(Tensor_List, k=6, max_iterations=2000)
+        algorithm = kmeans.KMeans(Tensor_List, k=6)
         Clusters = algorithm.predict(verbose=True)
         Table = pd.DataFrame()
         Table["Type"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Type"]
         Table["Clusters"] = Clusters
-        Contingency_Type = pd.crosstab(Table["Clusters"], Table["Type"], margins=True)
-        score += normalized_mutual_info_score(Table["Clusters"], Table["Type"])
-        convergence += algorithm.iterations
+        temp_score = metrics.adjusted_mutual_info_score(Table["Type"], Table["Clusters"])
+        if not score or temp_score > np.max(score):
+            Contingency_Type = pd.crosstab(Table["Clusters"], Table["Type"], margins=True)
+        score.append(temp_score)
+        convergence.append(algorithm.iterations)
 
     # Print clustering  results
-    print("Convergence average required steps", round(convergence / iterations, digits))
-    print("Average Normalized Mutual Information", round(score/iterations, digits))
+    print("Convergence average required steps", np.mean(convergence).round(digits))
+    print("Average Normalized Mutual Information", np.mean(score).round(digits))
     # noinspection PyUnboundLocalVariable
-    print("Last contingency table", Contingency_Type, sep="\n")
+    print("Best contingency table", "score = "+str(np.max(score).round(digits)),
+          Contingency_Type, sep="\n")
+    best_score_type = np.max(score)
 
     # Confusion matrix for Type
-    score = 0
-    convergence = 0
+    score = []
+    convergence = []
     for _ in range(iterations):
-        algorithm = kmeans.KMeans(Tensor_List, k=3, max_iterations=2000)
+        algorithm = kmeans.KMeans(Tensor_List, k=3)
         Clusters = algorithm.predict(verbose=True)
         Table = pd.DataFrame()
         Table["Step"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Step"]
         Table["Clusters"] = Clusters
-        Contingency_Step = pd.crosstab(Table["Clusters"], Table["Step"], margins=True)
-        score += normalized_mutual_info_score(Table["Clusters"], Table["Step"])
-        convergence += algorithm.iterations
-    print("Convergence average required steps", round(convergence / iterations, digits))
-    print("Average Normalized Mutual Information", round(score/iterations, digits))
+        temp_score = metrics.adjusted_mutual_info_score(Table["Step"], Table["Clusters"])
+        if not score or temp_score > np.max(score):
+            Contingency_Step = pd.crosstab(Table["Clusters"], Table["Step"], margins=True)
+        score.append(temp_score)
+        convergence.append(algorithm.iterations)
+
+    # Print clustering  results
+    print("Convergence average required steps", np.mean(convergence).round(digits))
+    print("Average Normalized Mutual Information", np.mean(score).round(digits))
     # noinspection PyUnboundLocalVariable
-    print("Contingency Table", Contingency_Step, sep="\n")
+    print("Best contingency table", "score = "+str(np.max(score).round(digits)),
+          Contingency_Step, sep="\n")
+    best_score_step = np.max(score)
 
     #  Adding plots respect to the confusion matrix of cluster per true label
     fig, axes = plt.subplots(nrows=1, ncols=2)
 
     sns.heatmap(Contingency_Type, ax=axes[0], annot=True, linewidths=0.5)
-    axes[0].set_title("Clustering per Type")
+    axes[0].set_title("SinkType AMI="+str(best_score_type.round(digits)))
 
     sns.heatmap(Contingency_Step, ax=axes[1], annot=True, linewidths=0.5)
-    axes[1].set_title("Clustering per Step")
+    axes[1].set_title("StepNumber AMI="+str(best_score_step.round(digits)))
     fig.tight_layout(pad=2)
     fig.suptitle(decompositions_features[index])
     plt.show()
