@@ -5,17 +5,17 @@ Created on Sat Nov 21 14:19:40 2020
 @author: JC
 """
 # %% import packages
+from os import chdir
 import pickle
 import glob
 import TuckerFunction
-import kmeans
 import tensorly as tl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from os import chdir
 from sklearn.metrics.cluster import normalized_mutual_info_score
+import kmeans
 
 
 # %% Create formatting and pre-processing functions
@@ -71,42 +71,92 @@ def min_max_scaling(tensor_list):
     min_core = tl.min(core_list, axis=0)
     max_core = tl.max(core_list, axis=0)
     core_list = (core_list - min_core)/(max_core - min_core)
-    for i in range(len(tensor_list)):
-        tensor_list[i].core = core_list[i]
+    for k in range(len(tensor_list)):
+        tensor_list[k].core = core_list[k]
     return tensor_list
 
 
-# %% WARNING Change current directory to decomposition folder
-chdir("Decompositions")
-# %% Load SubTensors objects
-name_list = glob.glob('*')
-name_list = [n for n in name_list if "HandWash_" in n]
-Tensor_List = []
-for tensor in name_list:
-    Handler = open(tensor, "rb")
-    Tensor_List.append(pickle.load(Handler))
+# %% Set experiment evaluation
+iterations = 15
+digits = 4
+decompositions_features = ["gray scale, rank=(32, 32, 32), frames=200",
+                           "BGR, rank=(10, 10, 10, 2), frames=100"]
+decompositions_paths = ["Decompositions", "Decompositions2"]  # Folders where distinct decompositions are stored
 
-n = len(Tensor_List)
+print("Running a total of", iterations, "iterations")
 
-for i in range(n):
-    Tensor_List[i].core = np.asarray(Tensor_List[i].core)
+for index, path in enumerate(decompositions_paths):
+    # Change path into right folder
+    chdir(path)
 
-# %% Contingency table
-Clusters = kmeans.KMeans(Tensor_List, k=6).predict()
-Table = pd.DataFrame()
-Table["Type"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Type"]
-Table["Clusters"] = Clusters
-Contingency = pd.crosstab(Table["Clusters"], Table["Type"], margins=True)
-print("Normalized Mutual Information", normalized_mutual_info_score(Table["Clusters"], Table["Type"]))
-print("Contingency Table", Contingency, sep="\n")
+    # Load SubTensors objects
+    name_list = glob.glob('*')
+    name_list = [n for n in name_list if "HandWash_" in n]
 
+    if not name_list:
+        print("Path provided has no tensor decompositions.")
+        break
 
-# %% Inverse engineering the decomposition
-print(Tensor_List[0])
-print(np.shape(Tensor_List[0].factors[0]))
-print(np.shape(Tensor_List[0].factors[1]))
-print(np.shape(Tensor_List[0].factors[2]))
-print(np.shape(Tensor_List[0].factors[3]))
-print(Tensor_List[0].factors[3])
-print(Tensor_List[0].core)
+    Tensor_List = []
+    for tensor in name_list:
+        Handler = open(tensor, "rb")
+        Tensor_List.append(pickle.load(Handler))
 
+    for j in range(len(Tensor_List)):
+        Tensor_List[j].core = np.asarray(Tensor_List[j].core)
+        
+    section_break = "-------------------------------------"
+    print(section_break)
+    print("Results for", decompositions_features[index])
+
+    # Confusion matrix for Type
+    score = 0
+    convergence = 0
+    for _ in range(iterations):
+        algorithm = kmeans.KMeans(Tensor_List, k=6, max_iterations=2000)
+        Clusters = algorithm.predict(verbose=True)
+        Table = pd.DataFrame()
+        Table["Type"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Type"]
+        Table["Clusters"] = Clusters
+        Contingency_Type = pd.crosstab(Table["Clusters"], Table["Type"], margins=True)
+        score += normalized_mutual_info_score(Table["Clusters"], Table["Type"])
+        convergence += algorithm.iterations
+
+    # Print clustering  results
+    print("Convergence average required steps", round(convergence / iterations, digits))
+    print("Average Normalized Mutual Information", round(score/iterations, digits))
+    # noinspection PyUnboundLocalVariable
+    print("Last contingency table", Contingency_Type, sep="\n")
+
+    # Confusion matrix for Type
+    score = 0
+    convergence = 0
+    for _ in range(iterations):
+        algorithm = kmeans.KMeans(Tensor_List, k=3, max_iterations=2000)
+        Clusters = algorithm.predict(verbose=True)
+        Table = pd.DataFrame()
+        Table["Step"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Step"]
+        Table["Clusters"] = Clusters
+        Contingency_Step = pd.crosstab(Table["Clusters"], Table["Step"], margins=True)
+        score += normalized_mutual_info_score(Table["Clusters"], Table["Step"])
+        convergence += algorithm.iterations
+    print("Convergence average required steps", round(convergence / iterations, digits))
+    print("Average Normalized Mutual Information", round(score/iterations, digits))
+    # noinspection PyUnboundLocalVariable
+    print("Contingency Table", Contingency_Step, sep="\n")
+
+    #  Adding plots respect to the confusion matrix of cluster per true label
+    fig, axes = plt.subplots(nrows=1, ncols=2)
+
+    sns.heatmap(Contingency_Type, ax=axes[0], annot=True, linewidths=0.5)
+    axes[0].set_title("Clustering per Type")
+
+    sns.heatmap(Contingency_Step, ax=axes[1], annot=True, linewidths=0.5)
+    axes[1].set_title("Clustering per Step")
+    fig.tight_layout(pad=2)
+    fig.suptitle(decompositions_features[index])
+    plt.show()
+
+    # Go back on path
+    chdir("..")
+    print("\n\n")
