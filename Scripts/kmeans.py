@@ -12,6 +12,21 @@ def tensor_distance(x1, x2):
 
 class KMeans:
     def __init__(self, tensor_list, distance=tensor_distance, k=6, max_iterations=100):
+        """
+        Class used to create a KMeans clustering for tensors.
+
+        Parameters
+        ----------
+            tensor_list: ndarray
+                List of SubTensors objects to be clustered.
+            distance: fun
+                Function used to compute the distance/similarity measure between tensors.
+            k: int
+                Integer representing the number of clusters to build.
+            max_iterations: int
+                Number of admissible iterations to compute.
+
+        """
         # Init tensors
         self.tensor_list = tensor_list
         self.n_samples = len(tensor_list)
@@ -31,6 +46,22 @@ class KMeans:
         self.centroids = []
 
     def predict(self, centroids=None, verbose=False):
+        """
+         Class method to execute clustering.
+
+         Parameters
+         ----------
+             centroids: list or None
+                 List of tensors cores containing the centroid-tensors used to initialize the algorithm.
+                 If `None` are provided, they randomly initialized from the provided cores
+             verbose: bool
+                 Boolean used to print warnings about convergence (if any).
+
+         Returns
+         -------
+         numpy.ndarray containing the assigned cluster for each provided SubTensor object.
+         """
+
         # initialize centroids
         if centroids is None:
             self.centroids = np.random.choice(self.n_samples, self.k, replace=False)
