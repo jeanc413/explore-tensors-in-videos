@@ -77,6 +77,7 @@ def min_max_scaling(tensor_list):
 
 
 # %% Set experiment evaluation
+np.random.seed(123)
 iterations = 31
 digits = 2
 decompositions_features = ["gray scale, rank=(32, 32, 32), frames=200",
@@ -126,7 +127,7 @@ for index, path in enumerate(decompositions_paths):
 
     # Print clustering  results
     print("Convergence average required steps", np.mean(convergence).round(digits))
-    print("Average Normalized Mutual Information", np.mean(score).round(digits))
+    print("Average Adjusted Mutual Information", np.mean(score).round(digits))
     # noinspection PyUnboundLocalVariable
     print("Best contingency table", "score = "+str(np.max(score).round(digits)),
           Contingency_Type, sep="\n")
@@ -149,7 +150,7 @@ for index, path in enumerate(decompositions_paths):
 
     # Print clustering  results
     print("Convergence average required steps", np.mean(convergence).round(digits))
-    print("Average Normalized Mutual Information", np.mean(score).round(digits))
+    print("Average Adjusted Mutual Information", np.mean(score).round(digits))
     # noinspection PyUnboundLocalVariable
     print("Best contingency table", "score = "+str(np.max(score).round(digits)),
           Contingency_Step, sep="\n")
