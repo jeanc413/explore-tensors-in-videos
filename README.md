@@ -7,7 +7,7 @@ This projects explores the idea of using tensors in videos. It uses Tucker decom
 
 Before running the code some libraries have to be installed
 
-Tensorly: a library used to compute the decompostions
+Tensorly: a library used to compute the decompostions.
 
 With pip 
 ```
@@ -20,23 +20,48 @@ With conda
 conda install -c tensorly tensorly
 ```
 
-### Installing
+OpenCV: Computer vision library used to manipulate videos.
 
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
-
+With pip 
 ```
-Give the example
+pip install opencv-python
 ```
 
-And repeat
-
+Numpy: mathematical library
+With pip 
 ```
-until finished
+pip install numpy
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
+## Running decompositions
+
+First all files must be in the same directory. Videos must be put into a separate Directory called Videos. ie. DIRECTORY_PATH\Videos.
+
+The next step is to run the file Tensor_Decomposition.py. This file will compute the tucker decomposition for all videos. By default it performs a rankn = (32,32,32) Gray Scale Decomposition at 200 frames.
+
+The previous file makes use of TuckerFunction.py, which is the main file at which decompositions are runned. Particulary we use the function video_tensor_decomposer()
+```python
+
+def video_tensor_decomposer(video_address,
+                            tensor_length=200,
+                            rank=(2, 2, 2, 2),
+                            decomposer="tucker",
+                            gray=True,
+                            seed_state=None,
+                            max_frames=None):
+```
+As you can see you can define several parameters mainly:
+
+Tensor Length: First we do a dimensionality reduction on the video, so we only choose n number of randoms frames from the videos, given by this parameter
+
+Rank: The Rank of the decomposition
+
+Decomposer: The decompostion method to be used (Tucker or CP) 
+
+Gray: Boolean value indicating if we want to transform the video into Gray Scale. This allows to choose between the Full colored videos, or a gray-scaled version to reduce dimensionality
+
+
+After the decompostion is done the Core Tensor and Factor Matrices (Given that the decomposition is Tucker) are stored in an object of class SubTensor. One can then call self.core or self.factors respectively to get the core  and factor matrices of the tensor.
 
 ## Running the tests
 
@@ -50,44 +75,16 @@ Explain what these tests test and why
 Give an example
 ```
 
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+* [Tensorly](http://tensorly.org/) - Simple and Fast Tensor Learning in Python
+* [OpenCV](https://opencv.org/) - Open Source computer vision
 
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+* **Jean Carlos Fernandez** - *Author* 
+* **Abdelrahman Elmorsy** - *Author* 
+* **Javier Jaquez** - *Author* 
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
