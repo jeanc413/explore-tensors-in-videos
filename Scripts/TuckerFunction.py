@@ -66,7 +66,7 @@ class SubTensor:
 # %% define Tucker Decomposition Function
 def video_tensor_decomposer(video_address,
                             tensor_length=200,
-                            rank=(2, 2, 2, 2),
+                            rank=(32, 32, 32),
                             decomposer="tucker",
                             gray=True,
                             seed_state=None,
