@@ -81,8 +81,11 @@ np.random.seed(123)
 iterations = 31
 digits = 2
 decompositions_features = ["gray scale, rank=(32, 32, 32), frames=200",
-                           "BGR, rank=(10, 10, 10, 2), frames=100"]
-decompositions_paths = ["Decompositions", "Decompositions2"]  # Folders where distinct decompositions are stored
+                           "BGR, rank=(10, 10, 10, 2), frames=100",
+                           "BGR, rank=(2, 2, 2, 2), frames=50"]
+decompositions_paths = ["Decompositions", 
+                        "Decompositions2",
+                        "Decompositions3"]  # Folders where distinct decompositions are stored
 
 print("Running a total of", iterations, "iterations")
 
