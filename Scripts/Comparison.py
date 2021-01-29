@@ -16,6 +16,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn import metrics
 import kmeans
+from time import time
 
 
 # %% Create formatting and pre-processing functions
@@ -116,7 +117,9 @@ for index, path in enumerate(decompositions_paths):
     # Confusion matrix for Type
     score = []
     convergence = []
+    duration = []
     for _ in range(iterations):
+        t_i = time()
         algorithm = kmeans.KMeans(Tensor_List, k=6)
         Clusters = algorithm.predict(verbose=True)
         Table = pd.DataFrame()
@@ -127,19 +130,25 @@ for index, path in enumerate(decompositions_paths):
             Contingency_Type = pd.crosstab(Table["Clusters"], Table["Type"], margins=True)
         score.append(temp_score)
         convergence.append(algorithm.iterations)
-
+        duration.append(time()-t_i)
     # Print clustering  results
+    print("Sink-Type results")
     print("Convergence average required steps", np.mean(convergence).round(digits))
     print("Average Adjusted Mutual Information", np.mean(score).round(digits))
     # noinspection PyUnboundLocalVariable
     print("Best contingency table", "score = "+str(np.max(score).round(digits)),
           Contingency_Type, sep="\n")
     best_score_type = np.max(score)
-
+    print("Average duration", np.mean(duration).round(digits))
+    print("Run lasted", np.sum(duration).round(digits))
+    print()
+    
     # Confusion matrix for Type
     score = []
     convergence = []
+    duration = []
     for _ in range(iterations):
+        t_i = time()
         algorithm = kmeans.KMeans(Tensor_List, k=3)
         Clusters = algorithm.predict(verbose=True)
         Table = pd.DataFrame()
@@ -150,14 +159,17 @@ for index, path in enumerate(decompositions_paths):
             Contingency_Step = pd.crosstab(Table["Clusters"], Table["Step"], margins=True)
         score.append(temp_score)
         convergence.append(algorithm.iterations)
-
+        duration.append(time()-t_i)
     # Print clustering  results
+    print("Step-number results")
     print("Convergence average required steps", np.mean(convergence).round(digits))
     print("Average Adjusted Mutual Information", np.mean(score).round(digits))
     # noinspection PyUnboundLocalVariable
     print("Best contingency table", "score = "+str(np.max(score).round(digits)),
           Contingency_Step, sep="\n")
     best_score_step = np.max(score)
+    print("Average duration", np.mean(duration).round(digits))
+    print("Run lasted", np.sum(duration).round(digits))
 
     #  Adding plots respect to the confusion matrix of cluster per true label
     fig, axes = plt.subplots(nrows=1, ncols=2)
