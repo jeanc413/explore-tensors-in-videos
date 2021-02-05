@@ -173,11 +173,29 @@ for index, path in enumerate(decompositions_paths):
 
     #  Adding plots respect to the confusion matrix of cluster per true label
     fig, axes = plt.subplots(nrows=1, ncols=2)
-
-    sns.heatmap(Contingency_Type, ax=axes[0], annot=True, linewidths=0.5)
+    
+    # Define max values for temperature range on heatmap.
+    max_type_margin = min(Contingency_Type.T.All.min(), 
+                      Contingency_Type.All.min())
+    max_steps_margin = min(Contingency_Step.T.All.min(),
+                           Contingency_Step.All.min())
+    
+    # Plotting heatmaps
+    sns.heatmap(Contingency_Type, 
+                ax=axes[0], 
+                vmin=-0, 
+                vmax=max_type_margin, 
+                annot=True, 
+                linewidths=0.5)
     axes[0].set_title("SinkType AMI="+str(best_score_type.round(digits)))
 
-    sns.heatmap(Contingency_Step, ax=axes[1], annot=True, linewidths=0.5)
+    sns.heatmap(Contingency_Step, 
+                ax=axes[1],
+                vmin=0,
+                vmax=max_steps_margin,
+                robust=True,
+                annot=True,
+                linewidths=0.5)
     axes[1].set_title("StepNumber AMI="+str(best_score_step.round(digits)))
     fig.tight_layout(pad=2)
     fig.suptitle(decompositions_features[index])
@@ -186,3 +204,4 @@ for index, path in enumerate(decompositions_paths):
     # Go back on path
     chdir("..")
     print("\n\n")
+    
