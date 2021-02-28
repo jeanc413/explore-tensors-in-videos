@@ -50,37 +50,12 @@ def reformat_string(data):
     return data
 
 
-def standardize(tensor_list):
-    core_list = [tensor_list[i].core for i in range(len(tensor_list))]
-    mean = tl.mean(core_list, axis=0)
-    std = tl.sqrt(((core_list - mean)**2)/len(tensor_list)-1)
-    standard_score = (core_list - mean)/std
-    for i in range(len(tensor_list)):
-        tensor_list[i].core = standard_score
-    return tensor_list
-
-
-def unit_length_scaling(tensor_list):
-    core_list = [tensor_list[i].core for i in range(len(tensor_list))]
-    for i in range(len(tensor_list)):
-        tensor_list[i].core = core_list[i]/tl.norm(core_list[i])
-    return tensor_list
-
-
-def min_max_scaling(tensor_list):
-    core_list = [tensor_list[i].core for i in range(len(tensor_list))]
-    min_core = tl.min(core_list, axis=0)
-    max_core = tl.max(core_list, axis=0)
-    core_list = (core_list - min_core)/(max_core - min_core)
-    for k in range(len(tensor_list)):
-        tensor_list[k].core = core_list[k]
-    return tensor_list
-
-
 # %% Set experiment evaluation
 np.random.seed(123)
-iterations = 100
+min_iterations = 500
+max_iterations = 1000
 digits = 2
+tol = 1e-5
 decompositions_features = ["gray scale, rank=(32, 32, 32), frames=200",
                            "BGR, rank=(10, 10, 10, 2), frames=100",
                            "BGR, rank=(2, 2, 2, 2), frames=50"]
@@ -88,7 +63,7 @@ decompositions_paths = ["Decompositions",
                         "Decompositions2",
                         "Decompositions3"]  # Folders where distinct decompositions are stored
 
-print("Running a total of", iterations, "iterations")
+print("Maximum running a total of", max_iterations, "iterations")
 
 for index, path in enumerate(decompositions_paths):
     # Change path into right folder
@@ -118,7 +93,8 @@ for index, path in enumerate(decompositions_paths):
     score = []
     convergence = []
     duration = []
-    for _ in range(iterations):
+    iterations = 0
+    while(True):
         t_i = time()
         algorithm = kmeans.KMeans(Tensor_List, k=6)
         Clusters = algorithm.predict(verbose=True)
@@ -128,11 +104,26 @@ for index, path in enumerate(decompositions_paths):
         temp_score = metrics.adjusted_mutual_info_score(Table["Type"], Table["Clusters"])
         if not score or temp_score > np.max(score):
             Contingency_Type = pd.crosstab(Table["Clusters"], Table["Type"], margins=True)
+        if not score:
+            old_avg = 0
+        else:
+            old_avg = np.mean(score)
         score.append(temp_score)
+        new_avg = np.mean(score)
         convergence.append(algorithm.iterations)
         duration.append(time()-t_i)
+        iterations+=1
+        Stopper = abs(old_avg-new_avg) < tol or max_iterations <= iterations
+        Stopper = Stopper and min_iterations < iterations
+        if Stopper:
+            if max_iterations <= iterations:
+                print("CONVERGED RESULT NOT OBTAINED")
+            break
+    this_score = score
+            
     # Print clustering  results
     print("Sink-Type results")
+    print("Iteration count", iterations)
     print("Convergence average required steps", np.mean(convergence).round(digits))
     print("Average Adjusted Mutual Information", np.mean(score).round(digits))
     print("Standard Deviation AMI", np.std(score).round(digits))
@@ -148,7 +139,8 @@ for index, path in enumerate(decompositions_paths):
     score = []
     convergence = []
     duration = []
-    for _ in range(iterations):
+    iterations = 0
+    while(True):
         t_i = time()
         algorithm = kmeans.KMeans(Tensor_List, k=3)
         Clusters = algorithm.predict(verbose=True)
@@ -158,11 +150,25 @@ for index, path in enumerate(decompositions_paths):
         temp_score = metrics.adjusted_mutual_info_score(Table["Step"], Table["Clusters"])
         if not score or temp_score > np.max(score):
             Contingency_Step = pd.crosstab(Table["Clusters"], Table["Step"], margins=True)
+        if not score:
+            old_avg = 0
+        else:
+            old_avg = np.mean(score)
         score.append(temp_score)
+        new_avg = np.mean(score)
         convergence.append(algorithm.iterations)
         duration.append(time()-t_i)
+        iterations+=1
+        Stopper = abs(old_avg-new_avg) < tol or max_iterations <= iterations
+        Stopper = Stopper and min_iterations < iterations
+        if Stopper:
+            if max_iterations <= iterations:
+                print("CONVERGED RESULT NOT OBTAINED")
+            break
+        
     # Print clustering  results
     print("Step-number results")
+    print("Iteration count", iterations)
     print("Convergence average required steps", np.mean(convergence).round(digits))
     print("Average Adjusted Mutual Information", np.mean(score).round(digits))
     print("Standard Deviation AMI", np.std(score).round(digits))
