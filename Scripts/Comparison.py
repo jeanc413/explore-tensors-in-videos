@@ -50,20 +50,35 @@ def reformat_string(data):
     return data
 
 
+def result_summary(name, convergence, score, contingency, digits):
+    # Print clustering  results
+    iterations = np.size(convergence)
+    print(name,"results")
+    print("Iteration count", iterations)
+    print("Convergence average required steps", np.mean(convergence).round(digits))
+    print("Average Adjusted Mutual Information", np.mean(score).round(digits))
+    print("Standard Deviation AMI", np.std(score).round(digits))
+    print("Best contingency table", "score = "+str(np.max(score).round(digits)),
+          contingency, sep="\n")
+    print("Average duration", np.mean(duration).round(digits))
+    print("Run lasted", np.sum(duration).round(digits))
+    print()
+    
+
 # %% Set experiment evaluation
 np.random.seed(123)
-min_iterations = 500
-max_iterations = 1000
+max_iterations = 500
 digits = 2
-tol = 1e-5
 decompositions_features = ["gray scale, rank=(32, 32, 32), frames=200",
                            "BGR, rank=(10, 10, 10, 2), frames=100",
                            "BGR, rank=(2, 2, 2, 2), frames=50"]
 decompositions_paths = ["Decompositions", 
                         "Decompositions2",
                         "Decompositions3"]  # Folders where distinct decompositions are stored
+score_type_dictionary = {}
+score_step_dictionary = {}
 
-print("Maximum running a total of", max_iterations, "iterations")
+print("Running a total of", max_iterations, "iterations")
 
 for index, path in enumerate(decompositions_paths):
     # Change path into right folder
@@ -88,95 +103,67 @@ for index, path in enumerate(decompositions_paths):
     section_break = "-------------------------------------"
     print(section_break)
     print("Results for", decompositions_features[index])
+    print("{")
 
     # Confusion matrix for Type
     score = []
     convergence = []
     duration = []
     iterations = 0
-    while(True):
+    while iterations < max_iterations:
         t_i = time()
         algorithm = kmeans.KMeans(Tensor_List, k=6)
-        Clusters = algorithm.predict(verbose=True)
-        Table = pd.DataFrame()
-        Table["Type"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Type"]
-        Table["Clusters"] = Clusters
-        temp_score = metrics.adjusted_mutual_info_score(Table["Type"], Table["Clusters"])
-        if not score or temp_score > np.max(score):
-            Contingency_Type = pd.crosstab(Table["Clusters"], Table["Type"], margins=True)
-        if not score:
-            old_avg = 0
-        else:
-            old_avg = np.mean(score)
-        score.append(temp_score)
-        new_avg = np.mean(score)
-        convergence.append(algorithm.iterations)
-        duration.append(time()-t_i)
-        iterations+=1
-        Stopper = abs(old_avg-new_avg) < tol or max_iterations <= iterations
-        Stopper = Stopper and min_iterations < iterations
-        if Stopper:
-            if max_iterations <= iterations:
-                print("CONVERGED RESULT NOT OBTAINED")
-            break
-    this_score = score
+        Clusters = algorithm.predict()
+        if algorithm.exit_criteria == 'convergence':
+            Table = pd.DataFrame()
+            Table["Type"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Type"]
+            Table["Clusters"] = Clusters
+            temp_score = metrics.adjusted_mutual_info_score(Table["Type"], Table["Clusters"])
+            if not score or temp_score > np.max(score):
+                Contingency_Type = pd.crosstab(Table["Clusters"], Table["Type"], margins=True)
+            score.append(temp_score)
+            convergence.append(algorithm.iterations)
+            duration.append(time()-t_i)
+            iterations+=1
+    best_score_type = np.max(score)
+    score_type_dictionary[decompositions_features[index]] = np.asarray(score)
             
     # Print clustering  results
-    print("Sink-Type results")
-    print("Iteration count", iterations)
-    print("Convergence average required steps", np.mean(convergence).round(digits))
-    print("Average Adjusted Mutual Information", np.mean(score).round(digits))
-    print("Standard Deviation AMI", np.std(score).round(digits))
-    # noinspection PyUnboundLocalVariable
-    print("Best contingency table", "score = "+str(np.max(score).round(digits)),
-          Contingency_Type, sep="\n")
-    best_score_type = np.max(score)
-    print("Average duration", np.mean(duration).round(digits))
-    print("Run lasted", np.sum(duration).round(digits))
-    print()
+    result_summary(name="Sink-Type", 
+                   convergence=convergence, 
+                   score=score, 
+                   contingency=Contingency_Type,
+                   digits=digits)
     
     # Confusion matrix for Type
     score = []
     convergence = []
     duration = []
     iterations = 0
-    while(True):
+    while iterations < max_iterations:
         t_i = time()
         algorithm = kmeans.KMeans(Tensor_List, k=3)
-        Clusters = algorithm.predict(verbose=True)
-        Table = pd.DataFrame()
-        Table["Step"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Step"]
-        Table["Clusters"] = Clusters
-        temp_score = metrics.adjusted_mutual_info_score(Table["Step"], Table["Clusters"])
-        if not score or temp_score > np.max(score):
-            Contingency_Step = pd.crosstab(Table["Clusters"], Table["Step"], margins=True)
-        if not score:
-            old_avg = 0
-        else:
-            old_avg = np.mean(score)
-        score.append(temp_score)
-        new_avg = np.mean(score)
-        convergence.append(algorithm.iterations)
-        duration.append(time()-t_i)
-        iterations+=1
-        Stopper = abs(old_avg-new_avg) < tol or max_iterations <= iterations
-        Stopper = Stopper and min_iterations < iterations
-        if Stopper:
-            if max_iterations <= iterations:
-                print("CONVERGED RESULT NOT OBTAINED")
-            break
-        
-    # Print clustering  results
-    print("Step-number results")
-    print("Iteration count", iterations)
-    print("Convergence average required steps", np.mean(convergence).round(digits))
-    print("Average Adjusted Mutual Information", np.mean(score).round(digits))
-    print("Standard Deviation AMI", np.std(score).round(digits))
-    print("Best contingency table", "score = "+str(np.max(score).round(digits)),
-          Contingency_Step, sep="\n")
+        Clusters = algorithm.predict()
+        if algorithm.exit_criteria == 'convergence':
+            Table = pd.DataFrame()
+            Table["Step"] = reformat_string(pd.Series(name_list).str.split("_", expand=True))["Step"]
+            Table["Clusters"] = Clusters
+            temp_score = metrics.adjusted_mutual_info_score(Table["Step"], Table["Clusters"])
+            if not score or temp_score > np.max(score):
+                Contingency_Step = pd.crosstab(Table["Clusters"], Table["Step"], margins=True)
+            score.append(temp_score)
+            convergence.append(algorithm.iterations)
+            duration.append(time()-t_i)
+            iterations+=1
     best_score_step = np.max(score)
-    print("Average duration", np.mean(duration).round(digits))
-    print("Run lasted", np.sum(duration).round(digits))
+    score_step_dictionary[decompositions_features[index]] = np.asarray(score)
+
+    # Print clustering  results
+    result_summary(name="Step-number", 
+               convergence=convergence, 
+               score=score, 
+               contingency=Contingency_Step,
+               digits=digits)
 
     #  Adding plots respect to the confusion matrix of cluster per true label
     fig, axes = plt.subplots(nrows=1, ncols=2)
@@ -210,5 +197,6 @@ for index, path in enumerate(decompositions_paths):
 
     # Go back on path
     chdir("..")
+    print("}")
     print("\n\n")
     
