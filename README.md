@@ -109,7 +109,11 @@ for `decompositions_features` and `decompositions_paths`.
 The detailed summary is provided via console prints, and the plots 
 are stored in memory.
 
+### Break down into end-to-end tests
 
+For example results please read the attached
+paper ***Video_Analysis_using_Tensors.pdf***, where the experiments
+are summarized in depth, and the interpretation of result is explained.
 
 ## Authors
 
