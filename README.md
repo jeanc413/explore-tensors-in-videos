@@ -1,37 +1,43 @@
 # Explore tensors in videos
 
-This projects explores the idea of using tensors in videos. It uses Tucker decomposition to transform videos into a lower dimensional space. More specifically it utilizes the core matrix of tucker decomposition  as compressed version of the video. The code in this repository takes videos, decomposes them and then it utilizes K-means clustering to group the cores. The aim is to check if this lower dimensional spaces are good representations of videos.
+This project explores the idea of using tensors in videos. 
+It uses Tucker decomposition to transform videos into a lower dimensional space. 
+In simpler words, it utilizes the core matrix of tucker decomposition  as a compressed 
+version of the video. The code in this repository takes videos, 
+decomposes them into Tucker Cores and Factors,
+and then uses *K-means* clustering to group the cores. 
+The aim is to check if this lower dimensional spaces 
+are good representations of videos.
 
 
 ### Prerequisites
 
-Before running the code some libraries have to be installed
+Before running the code some libraries have to be installed. We will
+simply provide a list of packages to install in a format of *required*
+and *optional* packages. For installation use the package manager 
+in your local installation.
 
-Tensorly: a library used to compute the decompostions.
+## Required packages
+This list of packages are required to replicate the experiment:
 
-With pip 
-```
-pip install -U tensorly
-```
+* [Tensorly](http://tensorly.org/) - Library used to deploy 
+  tensors framework and compute tensor decompositions.
+* [OpenCV](https://opencv.org/) - Computer vision library for video 
+  manipulation.
+* [Numpy](https://numpy.org/) - Mathematical computation library 
+  for multidimensional arrays.
+* [Matplotlib](https://matplotlib.org) Python-Numpy Plotting library.
+* [Pandas](https://pandsa.pydata.org) - Data analysis 
+  and manipulation tool.
+* [Seaborn](https://seaborn.pydata.org) - Matplotlib based 
+  library for statistical plotting.
+* [Scikit-Learn](https://scikit-learn.org) - Machine Learning tools library.
 
-With conda
+## Optional packages
+These were used as optional infrastructure to accelerate certain 
+computation, overall if a compatible GPU device was available:
 
-```
-conda install -c tensorly tensorly
-```
-
-OpenCV: Computer vision library used to manipulate videos.
-
-With pip 
-```
-pip install opencv-python
-```
-
-Numpy: mathematical library
-With pip 
-```
-pip install numpy
-```
+* PyTorch: Machine Learning library used on irregular input data.
 
 ## Running decompositions
 
@@ -48,37 +54,61 @@ def video_tensor_decomposer(video_address,
                             decomposer="tucker",
                             gray=True,
                             seed_state=None,
-                            max_frames=None):
+                            max_frames=None)
+    """
+    This is a wrapper function to generate decompositions of videos by exploiting their structure as tensors.
+
+    Parameters
+    ----------
+        video_address: string
+            Video path location.
+        tensor_length: int
+            Integer for frames quantity to be selected to generate the tensor.
+        rank: tuple or list
+            tuple or list  object with the n-rank to use during the decomposition.
+        decomposer: {tucker, parafac} or tensorly.decomposition fun
+            Used decomposition algorithm from `tensorly` library.
+        gray: bool
+            Boolean telling if the video should be converted to grayscale by cv2 library.
+        seed_state: numpy.random.RandomState
+            Seed state used to generate the frames sample. If None, a random initial seed is to be started.
+        max_frames: int
+            Integer telling if there's a maximum amount of frames to be used from video length. If None,
+            it will be set as the maximum number of frames of the video.
+
+    Returns
+    -------
+    Returns TuckerFunction.SubTensor class object with the video decomposition for the given parameters.
+    """
 ```
-As you can see you can define several parameters mainly:
 
-Tensor Length: First we do a dimensionality reduction on the video, so we only choose n number of randoms frames from the videos, given by this parameter
-
-Rank: The Rank of the decomposition
-
-Decomposer: The decompostion method to be used (Tucker or CP) 
-
-Gray: Boolean value indicating if we want to transform the video into Gray Scale. This allows to choose between the Full colored videos, or a gray-scaled version to reduce dimensionality
-
-
-After the decompostion is done the Core Tensor and Factor Matrices (Given that the decomposition is Tucker) are stored in an object of class SubTensor. One can then call self.core or self.factors respectively to get the core  and factor matrices of the tensor.
+After the decomposition is done the Core Tensor and 
+Factor Matrices (Given that the decomposition is Tucker) 
+are stored in an object of class SubTensor. 
+One can then call self.core or self.factors respectively 
+to get the core  and factor matrices of the tensor. 
+For more information, feel free to read the class or functions 
+documentation on script, or console (by typing
+`TuckerFunction.SubTensor?` after import).
 
 ## Running the tests
 
-Explain how to run the automated tests for this system
+The file `Comparison.py` contains the *clustering* experiment 
+using our defined `nranks` for the tensors decompositions. It's 
+important to start this script's working directory on it's same path.
+Since the used *k-means* algorithm was a self-implementation to 
+work with our SubTensor object class, it's required to import 
+(therefore have in the same path when starting the script)
+`TuckerFunction.py` and `kmeans.py`.
 
-### Break down into end to end tests
+This script will run the experiment and generate appropriate
+summaries for each provided decomposition configuration.
+This repository provides 3 defined decompositions. If users
+want to redefine this, please modify the `Comparison.py` cells 
+for `decompositions_features` and `decompositions_paths`.
+The detailed summary is provided via console prints, and the plots 
+are stored in memory.
 
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Built With
-
-* [Tensorly](http://tensorly.org/) - Simple and Fast Tensor Learning in Python
-* [OpenCV](https://opencv.org/) - Open Source computer vision
 
 
 ## Authors
@@ -86,5 +116,3 @@ Give an example
 * **Jean Carlos Fernandez** - *Author* 
 * **Abdelrahman Elmorsy** - *Author* 
 * **Javier Jaquez** - *Author* 
-
-

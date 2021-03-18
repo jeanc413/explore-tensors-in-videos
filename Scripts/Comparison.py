@@ -69,12 +69,16 @@ def result_summary(name, convergence, score, contingency, digits):
 np.random.seed(123)
 max_iterations = 500
 digits = 2
+
+# Description of the stored decompositions parameters
 decompositions_features = ["gray scale, rank=(32, 32, 32), frames=200",
                            "BGR, rank=(10, 10, 10, 2), frames=100",
                            "BGR, rank=(2, 2, 2, 2), frames=50"]
+
+# Folders where distinct decompositions are stored
 decompositions_paths = ["Decompositions", 
                         "Decompositions2",
-                        "Decompositions3"]  # Folders where distinct decompositions are stored
+                        "Decompositions3"]  
 score_type_dictionary = {}
 score_step_dictionary = {}
 
