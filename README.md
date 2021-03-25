@@ -2,7 +2,7 @@
 
 This project explores the idea of using tensors in videos. 
 It uses Tucker decomposition to transform videos into a lower dimensional space. 
-In simpler words, it utilizes the core matrix of tucker decomposition  as a compressed 
+In simpler words, it utilizes the core tensor of tucker decomposition  as a compressed 
 version of the video. The code in this repository takes videos, 
 decomposes them into Tucker Cores and Factors,
 and then uses *K-means* clustering to group the cores. 
